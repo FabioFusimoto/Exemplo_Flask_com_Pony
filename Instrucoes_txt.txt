@@ -1,0 +1,67 @@
+INSTRUÇÕES E COMENTÁRIOS GERAIS
+
+REQUERIMENTOS
+1)Criar um ambiente virtual para a instalação das bibliotecas. No cmd:
+	mkdir nome_pasta
+	cd nome_pasta
+	python -m venv env
+	code . (para abrir o Visual Studio Code)
+
+2)Selecionar o interpretador adequado (o do ambiente virtual criado) no Visual Studio code
+	Ctrl+Shift+P para abrir a lista de comandos
+	Python: Select Interpreter
+	Python ... ('env':venv)
+
+3)Instalar os repositóriaos necessários
+	Ctrl+Shift+' para abrir um novo terminal (que será configurado para o ambiente virtual após selecionar o interpretador correto)
+	Flask (pip install flask)
+	Flask-RESTful (pip install flask-restful)
+	Pony ORM (pip install pony)
+
+RECURSOS UTILIZADOS
+1)Flask/Flask RESTful - Bibliotecas úteis para facilitar a geração de APIs RESTful, isto é, implementar facilmente as requisições HTTP
+(GET, POST, PUT e DELETE). Documentação em <https://flask-restful.readthedocs.io/en/latest/index.html>
+
+2)Pony - Uma ORM (object-relational mapper) que permite gerar uma base de dados relacional a partir de objetos.
+Documentação em <https://docs.ponyorm.org/index.html>
+
+3)Postman - Para enviar requisições HTTP e observar os resultados
+
+DESCRIÇÃO 
+Esse programa implementa uma lista de afazeres e é baseado no seguinte tutorial <http://nafiulis.me/a-todo-app-with-flask-and-pony.html>.
+É um CRUD bem simples que permite inserir tarefas numa lista que permite retornar uma lista com todas as tarefas e consultar ou deletar uma tarefa específica
+(nessa versão não implementei a possibilidade de alterar uma tarefa). Cada tarefa possui um número (identificador único), uma descrição e uma data para ser realizada.
+
+IMPLEMENTAÇÃO
+Primeiro importa-se as bibliotecas necessárias (do Flask, Flask-RESTful e o Pony)
+
+Instancia-se um objeto da classe Flask (denominado app nesse programa) e gera-se uma API para o objeto criado (linhas 7 e 8)
+
+Para criar um banco de dados é necessário primeiro instanciar um banco de dados (feito através do comando db = Database()) e definir 
+quais as classes que serão relacionadas através do banco de dados. Tais classes serão filhas da classe entity presente em db (por isso
+define-se a herança class DB_Tarefa(db.Entity) na linha 17). Quando todas as classes estiverem definidas, é necessário realizar um bind,
+que define qual sintaxe de base de dados será utilizada (SQLite nesse caso) e o nome do arquivo (db_test.sqlite). O atributo create_db=True
+indica que se essa base de dados não existir ainda ele deve ser criada. 
+
+O parser é responsável por armazenar informações de uma requisição HTTP (a descrição de uma tarefa a ser adicionada através de um método POST por exemplo).
+Declara-se quais argumentos são esperados em uma determinada requisição (numero_tarefa, descricao e data nesse exemplo) e qual o tipo da variável esperada 
+(se nenhum tipo for explicitado, o padrão é uma string).
+
+Em seguida, cria-se as views através das classes Inicio, Lista e Tarefa (todas classes filhas de Resource, da biblioteca do Flask). Cada uma dessas classes
+pode possuir 4 métodos 'especiais' que implementam as requisições HTTP (get, post, put e delete). É necessário ligar essas classes a um endereço HTTP, esse processo
+é feito nas linhas 81 a 83 através do comando api.add_resource. Isto é, os métodos da classe Lista estarão acessíveis através do endereço <.../lista> (onde ... pode
+é um endereço local gerado automaticamente pelo Flask que pode ser alterado).
+
+Analisemos o método get da classe Lista. Em toda operação em que houver interação com banco de dados é necessário usar o decorator db_session (basta observar
+que nas linhas 41, 51, 58 e 68 começamos com with db_session:). Nesse método nota-se que acessamos a classe DB_Tarefa, que é uma das classes relacionadas no
+banco de dados previamente criado. Acessar essa classe se traduz em conseguir acessar todas as instâncias de DB_Tarefa geradas. Para procurar uma instância
+em específico, pode se utilizar várias sintaxes DB_Tarefa.select() é uma delas.
+
+Na linha 53, instancia-se um objeto da classe DB_Tarefa com os parâmetros obtidos através do parser. Instanciar essa classe significa automaticamente 
+inserir uma nova tarefa no banco de dados.
+
+Uma observação quanto a estrutura de dados das requisições feitas ao banco de dados. Quando se solicita um objeto do banco de dados (ou uma lista de objetos),
+as funções de seleção retornam um dado do tipo Query (que não é uma estrutura de dados padrão do Python). Entretanto, é possível converter o Query num dictionary,
+por exemplo, para facilitar o acesso as informações. Esse processo é adotado na linha 62 através da função to_dict.
+
+Para iniciar a sessão e disponibilizar as páginas criadas através dos add_resource, basta iniciar a instância da classe Flask através do comando app.run()
